@@ -1,5 +1,5 @@
 pipeline {
-    agent { label "DockerAgent" } // Agent này cần cài đặt Docker
+    agent { docker { image 'maven:3.9-eclipse-temurin-17' } } // Agent này cần cài đặt Docker
 
     options {
         // timestamps() // Lỗi này xảy ra nếu plugin 'Timestamper' chưa được cài. Đã tạm thời comment.
