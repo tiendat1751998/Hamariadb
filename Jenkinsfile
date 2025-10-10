@@ -14,7 +14,7 @@ pipeline {
         APP_CODE = 'Hamariadb'
         APP_REPO_URL = 'https://github.com/tiendat1751998/Hamariadb.git' // <-- TODO: Cập nhật URL Git repo của bạn
         APP_REPO_BRANCH = 'datdt' // <-- TODO: Cập nhật branch của bạn
-        APP_REPO_CREDENTIALS = 'your-git-credentials-id' // <-- TODO: Cấu hình ID credentials Git trong Jenkins
+        // APP_REPO_CREDENTIALS = 'your-git-credentials-id' // <-- TODO: Cấu hình ID credentials Git trong Jenkins
 
         // --- Cấu hình Deploy ---
         DEPLOY_ENV = 'dev'
