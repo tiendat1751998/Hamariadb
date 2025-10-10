@@ -2,10 +2,10 @@ pipeline {
     agent { label "DockerAgent" } // Agent này cần cài đặt Docker
 
     options {
-        timestamps()
+        // timestamps() // Lỗi này xảy ra nếu plugin 'Timestamper' chưa được cài. Đã tạm thời comment.
         timeout(time: 30, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '10'))
-        ansiColor('xterm')
+        // ansiColor('xterm') // Lỗi này xảy ra nếu plugin 'AnsiColor' chưa được cài. Đã tạm thời comment.
     }
 
     environment {
@@ -14,19 +14,20 @@ pipeline {
         APP_CODE = 'Hamariadb'
         APP_REPO_URL = 'https://github.com/tiendat1751998/Hamariadb.git' // <-- TODO: Cập nhật URL Git repo của bạn
         APP_REPO_BRANCH = 'datdt' // <-- TODO: Cập nhật branch của bạn
-        // APP_REPO_CREDENTIALS = 'your-git-credentials-id' // <-- TODO: Cấu hình ID credentials Git trong Jenkins
+        APP_REPO_CREDENTIALS = '' // <-- TODO: Cấu hình ID credentials Git nếu repo là private
 
         // --- Cấu hình Deploy ---
         DEPLOY_ENV = 'dev'
+        DOCKER_NETWORK = 'root_default' // <-- TODO: Cập nhật tên Docker network của bạn
         SERVICE_PORT_PUBLISH = '9101'
         SERVICE_PORT_LOCAL = '8080'
-        SERVICE_NAME = "$DEPLOY_ENV-$APP_PROJECT"
+        SERVICE_NAME = "${DEPLOY_ENV}-${APP_PROJECT}"
         
         // Các tham số cho lệnh 'docker run'.
         // Các giá trị nhạy cảm sẽ được load từ Jenkins Credentials ở stage Deploy.
         SERVICE_ARGS = """
-            -e SPRING_PROFILES_ACTIVE=$DEPLOY_ENV 
-            -e SERVER_PORT=$SERVICE_PORT_LOCAL 
+            -e SPRING_PROFILES_ACTIVE=${DEPLOY_ENV} 
+            -e SERVER_PORT=${SERVICE_PORT_LOCAL} 
             -e SERVER_CONTEXT_PATH=/api
             -e DB_URL=\${DB_URL}
             -e DB_USERNAME=\${DB_USERNAME}
@@ -43,7 +44,7 @@ pipeline {
         BUILD_IMAGE = 'maven:3.9-eclipse-temurin-17'
         BUILD_COMMAND = 'mvn clean package -DskipTests'
         TEST_COMMAND = 'mvn test'
-        BUILD_CACHE = "devops-cache-maven-$APP_PROJECT:/root/.m2" // Volume cache cho Maven
+        BUILD_CACHE = "devops-cache-maven-${APP_PROJECT}:/root/.m2" // Volume cache cho Maven
         BUILD_CHECK_CMD = 'ls target/*.jar'
         
         // --- Health Check ---
@@ -58,11 +59,11 @@ pipeline {
                 checkout([
                     $class: 'GitSCM',
                     userRemoteConfigs: [[
-                        url: "$APP_REPO_URL",
-                        credentialsId: "$APP_REPO_CREDENTIALS",
+                        url: env.APP_REPO_URL,
+                        credentialsId: env.APP_REPO_CREDENTIALS,
                     ]],
                     branches: [[
-                        name: "*/$APP_REPO_BRANCH"
+                        name: "*/${env.APP_REPO_BRANCH}"
                     ]],
                 ])
             }
@@ -72,11 +73,11 @@ pipeline {
             steps {
                 script {
                     env.GIT_COMMIT_APP = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-                    env.GIT_SHORT_COMMIT_APP = GIT_COMMIT_APP[0..6]
-                    env.DOCKER_IMAGE = "$APP_PROJECT/$APP_CODE".toLowerCase()
-                    env.DOCKER_TAG = "$DEPLOY_ENV-${GIT_SHORT_COMMIT_APP}"
-                    env.DOCKER_BUILDER_NAME = "builder-${SERVICE_NAME}-${BUILD_NUMBER}"
-                    currentBuild.displayName = "#${BUILD_NUMBER} - ${GIT_SHORT_COMMIT_APP}"
+                    env.GIT_SHORT_COMMIT_APP = env.GIT_COMMIT_APP[0..6]
+                    env.DOCKER_IMAGE = "${env.APP_PROJECT}/${env.APP_CODE}".toLowerCase()
+                    env.DOCKER_TAG = "${env.DEPLOY_ENV}-${env.GIT_SHORT_COMMIT_APP}"
+                    env.DOCKER_BUILDER_NAME = "builder-${env.SERVICE_NAME}-${BUILD_NUMBER}"
+                    currentBuild.displayName = "#${BUILD_NUMBER} - ${env.GIT_SHORT_COMMIT_APP}"
                 }
             }
         }
@@ -86,9 +87,9 @@ pipeline {
                 milestone(ordinal: null, label: "Milestone: Build")
                 timeout(time: 15, unit: 'MINUTES') {
                     echo "Building with Maven..."
-                    sh "docker run --rm --name $DOCKER_BUILDER_NAME -v \"$WORKSPACE:/app\" -v $BUILD_CACHE -w /app $BUILD_IMAGE $BUILD_COMMAND"
+                    sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME} -v \"${WORKSPACE}:/app\" -v ${env.BUILD_CACHE} -w /app ${env.BUILD_IMAGE} ${env.BUILD_COMMAND}"
                     echo "Checking for build artifact..."
-                    sh "$BUILD_CHECK_CMD"
+                    sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME}-check -v \"${WORKSPACE}:/app\" -w /app ${env.BUILD_IMAGE} ${env.BUILD_CHECK_CMD}"
                 }
             }
         }
@@ -99,7 +100,7 @@ pipeline {
                     steps {
                         timeout(time: 10, unit: 'MINUTES') {
                             echo "Running unit tests..."
-                            sh "docker run --rm --name ${DOCKER_BUILDER_NAME}-test -v \"$WORKSPACE:/app\" -v $BUILD_CACHE -w /app $BUILD_IMAGE $TEST_COMMAND"
+                            sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME}-test -v \"${WORKSPACE}:/app\" -v ${env.BUILD_CACHE} -w /app ${env.BUILD_IMAGE} ${env.TEST_COMMAND}"
                         }
                     }
                 }
@@ -117,9 +118,9 @@ pipeline {
             steps {
                 milestone(ordinal: null, label: "Milestone: Docker Build")
                 timeout(time: 10, unit: 'MINUTES') {
-                    echo "Building Docker image ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                    echo "Building Docker image ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}"
                     // Yêu cầu có file Dockerfile ở thư mục gốc project
-                    sh "docker build -t $DOCKER_IMAGE:$DOCKER_TAG -t $DOCKER_IMAGE:latest-$DEPLOY_ENV ."
+                    sh "docker build -t ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} -t ${env.DOCKER_IMAGE}:latest-${env.DEPLOY_ENV} ."
                 }
             }
         }
@@ -138,14 +139,14 @@ pipeline {
                         string(credentialsId: 'telegram-bot-token-dev', variable: 'TELEGRAM_BOT_TOKEN'),
                         string(credentialsId: 'telegram-admin-chat-id-dev', variable: 'TELEGRAM_ADMIN_CHAT_ID')
                     ]) {
-                        lock(resource: "deploy-$SERVICE_NAME", inversePrecedence: true) {
+                        lock(resource: "deploy-${env.SERVICE_NAME}", inversePrecedence: true) {
                             milestone(ordinal: null, label: "Milestone: Deploy")
-                            echo "Deploying ${DOCKER_IMAGE}:${DOCKER_TAG}..."
+                            echo "Deploying ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}..."
                             timeout(time: 5, unit: 'MINUTES') {
-                                sh "docker stop $SERVICE_NAME || true"
-                                sh "docker rm $SERVICE_NAME || true"
+                                sh "docker stop ${env.SERVICE_NAME} || true"
+                                sh "docker rm ${env.SERVICE_NAME} || true"
                                 // Biến SERVICE_ARGS sẽ được sử dụng ở đây, với các giá trị credentials đã load
-                                sh "docker run -d --network your-docker-network --name $SERVICE_NAME -p $SERVICE_PORT_PUBLISH:$SERVICE_PORT_LOCAL $SERVICE_ARGS $DOCKER_IMAGE:$DOCKER_TAG"
+                                sh "docker run -d --network ${env.DOCKER_NETWORK} --name ${env.SERVICE_NAME} -p ${env.SERVICE_PORT_PUBLISH}:${env.SERVICE_PORT_LOCAL} ${env.SERVICE_ARGS} ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}"
                             }
                         }
                     }
@@ -157,9 +158,13 @@ pipeline {
             steps {
                 timeout(time: 3, unit: 'MINUTES') {
                     waitUntil(initialRecurrencePeriod: 5000, quiet: false) {
-                        echo "Performing health check..."
-                        def healthCheckResult = sh(script: "docker exec $SERVICE_NAME bash -c '$HEALTH_CHECK_CMD'", returnStatus: true)
-                        return healthCheckResult == 0
+                        // SỬA LỖI: Bọc logic script vào trong khối script { ... }
+                        script {
+                            echo "Performing health check..."
+                            def healthCheckResult = sh(script: "docker exec ${env.SERVICE_NAME} bash -c '${HEALTH_CHECK_CMD}'", returnStatus: true)
+                            // Trả về true nếu health check thành công (exit code = 0)
+                            return healthCheckResult == 0
+                        }
                     }
                     echo "Health check passed!"
                 }
