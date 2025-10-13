@@ -87,7 +87,7 @@ pipeline {
                 milestone(ordinal: null, label: "Milestone: Build")
                 timeout(time: 15, unit: 'MINUTES') {
                     echo "Building with Maven..."
-                    sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME} -v \"${WORKSPACE}:/app/Hamariadb\" -v ${env.BUILD_CACHE} -w /app ${env.BUILD_IMAGE} ${env.BUILD_COMMAND}"
+                    sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME} -v \"${WORKSPACE}:/app/Hamariadb\" -v ${env.BUILD_CACHE} -w /app/Hamariadb ${env.BUILD_IMAGE} ${env.BUILD_COMMAND}"
                     echo "Checking for build artifact..."
                     sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME}-check -v \"${WORKSPACE}:/app/Hamariadb\" -w /app/Hamariadb ${env.BUILD_IMAGE} ${env.BUILD_CHECK_CMD}"
                 }
