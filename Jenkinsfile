@@ -60,6 +60,7 @@ pipeline {
                     $class: 'GitSCM',
                     userRemoteConfigs: [[
                         url: env.APP_REPO_URL,
+                        // credentialsId: env.APP_REPO_CREDENTIALS,
                     ]],
                     branches: [[
                         name: "*/${env.APP_REPO_BRANCH}"
