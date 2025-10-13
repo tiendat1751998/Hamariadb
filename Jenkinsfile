@@ -14,7 +14,7 @@ pipeline {
         APP_CODE = 'Hamariadb'
         APP_REPO_URL = 'https://github.com/tiendat1751998/Hamariadb.git' // <-- TODO: Cập nhật URL Git repo của bạn
         APP_REPO_BRANCH = 'datdt' // <-- TODO: Cập nhật branch của bạn
-        APP_REPO_CREDENTIALS = '' // <-- TODO: Cấu hình ID credentials Git nếu repo là private
+ // <-- TODO: Cấu hình ID credentials Git nếu repo là private
 
         // --- Cấu hình Deploy ---
         DEPLOY_ENV = 'dev'
@@ -87,9 +87,9 @@ pipeline {
                 milestone(ordinal: null, label: "Milestone: Build")
                 timeout(time: 15, unit: 'MINUTES') {
                     echo "Building with Maven..."
-                    sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME} -v \"${WORKSPACE}:/app\" -v ${env.BUILD_CACHE} -w /app ${env.BUILD_IMAGE} ${env.BUILD_COMMAND}"
+                    sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME} -v \"${WORKSPACE}:/app/Hamariadb\" -v ${env.BUILD_CACHE} -w /app ${env.BUILD_IMAGE} ${env.BUILD_COMMAND}"
                     echo "Checking for build artifact..."
-                    sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME}-check -v \"${WORKSPACE}:/app\" -w /app ${env.BUILD_IMAGE} ${env.BUILD_CHECK_CMD}"
+                    sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME}-check -v \"${WORKSPACE}:/app/Hamariadb\" -w /app/Hamariadb ${env.BUILD_IMAGE} ${env.BUILD_CHECK_CMD}"
                 }
             }
         }
@@ -100,7 +100,7 @@ pipeline {
                     steps {
                         timeout(time: 10, unit: 'MINUTES') {
                             echo "Running unit tests..."
-                            sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME}-test -v \"${WORKSPACE}:/app\" -v ${env.BUILD_CACHE} -w /app ${env.BUILD_IMAGE} ${env.TEST_COMMAND}"
+                            sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME}-test -v \"${WORKSPACE}:/app/Hamariadb\" -v ${env.BUILD_CACHE} -w /app/Hamariadb ${env.BUILD_IMAGE} ${env.TEST_COMMAND}"
                         }
                     }
                 }
