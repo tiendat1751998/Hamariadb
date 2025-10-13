@@ -1,25 +1,30 @@
 pipeline {
-    agent any // Jenkins agent cần có Docker daemon
+    agent any //aent này cần cài đặt Docker
 
     options {
+        // timestamps() // Lỗi này xảy ra nếu plugin 'Timestamper' chưa được cài. Đã tạm thời comment.
         timeout(time: 30, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '10'))
+        // ansiColor('xterm') // Lỗi này xảy ra nếu plugin 'AnsiColor' chưa được cài. Đã tạm thời comment.
     }
 
     environment {
-        // --- Project Info ---
-        APP_PROJECT = 'hamariadb'
+        // --- Cấu hình Project ---
+        APP_PROJECT = 'hamariadb' // Dùng chữ thường để tương thích Docker
         APP_CODE = 'Hamariadb'
-        APP_REPO_URL = 'https://github.com/tiendat1751998/Hamariadb.git'
-        APP_REPO_BRANCH = 'datdt'
+        APP_REPO_URL = 'https://github.com/tiendat1751998/Hamariadb.git' // <-- TODO: Cập nhật URL Git repo của bạn
+        APP_REPO_BRANCH = 'datdt' // <-- TODO: Cập nhật branch của bạn
+ // <-- TODO: Cấu hình ID credentials Git nếu repo là private
 
-        // --- Deploy Config ---
+        // --- Cấu hình Deploy ---
         DEPLOY_ENV = 'dev'
-        DOCKER_NETWORK = 'root_default'
+        DOCKER_NETWORK = 'root_default' // <-- TODO: Cập nhật tên Docker network của bạn
         SERVICE_PORT_PUBLISH = '9101'
         SERVICE_PORT_LOCAL = '8080'
         SERVICE_NAME = "${DEPLOY_ENV}-${APP_PROJECT}"
-
+        
+        // Các tham số cho lệnh 'docker run'.
+        // Các giá trị nhạy cảm sẽ được load từ Jenkins Credentials ở stage Deploy.
         SERVICE_ARGS = """
             -e SPRING_PROFILES_ACTIVE=${DEPLOY_ENV} 
             -e SERVER_PORT=${SERVICE_PORT_LOCAL} 
@@ -35,30 +40,32 @@ pipeline {
             -e TELEGRAM_ADMIN_CHAT_ID=\${TELEGRAM_ADMIN_CHAT_ID}
         """
 
-        // --- Build Tool ---
+        // --- Cấu hình Build Tool (Maven & JDK 17) ---
         BUILD_IMAGE = 'maven:3.9-eclipse-temurin-17'
         BUILD_COMMAND = 'mvn clean package -DskipTests'
         TEST_COMMAND = 'mvn test'
-        BUILD_CACHE = "devops-cache-maven-${APP_PROJECT}:/root/.m2"
+        BUILD_CACHE = "devops-cache-maven-${APP_PROJECT}:/root/.m2" // Volume cache cho Maven
         BUILD_CHECK_CMD = 'ls target/*.jar'
-
+        
+        // --- Health Check ---
+        // Yêu cầu có dependency spring-boot-starter-actuator
         HEALTH_CHECK_CMD = 'curl -f http://localhost:8080/api/actuator/health || exit 1'
     }
 
     stages {
-        stage('Checkout') {
+        stage ('Checkout') {
             steps {
-                echo "📦 Checking out ${APP_REPO_BRANCH} from ${APP_REPO_URL}"
+                echo "Checking out ${APP_REPO_BRANCH} from ${APP_REPO_URL}"
                 checkout([
                     $class: 'GitSCM',
                     userRemoteConfigs: [[
-                        url: env.APP_REPO_URL
+                        url: env.APP_REPO_URL,
+                        credentialsId: env.APP_REPO_CREDENTIALS,
                     ]],
                     branches: [[
                         name: "*/${env.APP_REPO_BRANCH}"
-                    ]]
+                    ]],
                 ])
-                sh 'ls -la && echo "--- Found POM:" && find . -name pom.xml'
             }
         }
 
@@ -77,24 +84,12 @@ pipeline {
 
         stage('Build Code') {
             steps {
-                milestone(label: "Milestone: Build")
+                milestone(ordinal: null, label: "Milestone: Build")
                 timeout(time: 15, unit: 'MINUTES') {
-                    echo "⚙️ Building with Maven inside Docker..."
-                    sh """
-                        docker run --rm --name ${env.DOCKER_BUILDER_NAME} \
-                            -v "${WORKSPACE}:/app" \
-                            -v ${env.BUILD_CACHE} \
-                            -w /app \
-                            ${env.BUILD_IMAGE} ${env.BUILD_COMMAND}
-                    """
-
-                    echo "🔍 Checking for build artifact..."
-                    sh """
-                        docker run --rm --name ${env.DOCKER_BUILDER_NAME}-check \
-                            -v "${WORKSPACE}:/app" \
-                            -w /app \
-                            ${env.BUILD_IMAGE} ${env.BUILD_CHECK_CMD}
-                    """
+                    echo "Building with Maven..."
+                    sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME} -v \"${WORKSPACE}:/app/\" -v ${env.BUILD_CACHE} -w /app/Hamariadb  ${env.BUILD_IMAGE} ${env.BUILD_COMMAND}"
+                    echo "Checking for build artifact..."
+                    sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME}-check -v \"${WORKSPACE}:/app/\" -w /app/ ${env.BUILD_IMAGE} ${env.BUILD_CHECK_CMD}"
                 }
             }
         }
@@ -104,25 +99,27 @@ pipeline {
                 stage('Unit Tests') {
                     steps {
                         timeout(time: 10, unit: 'MINUTES') {
-                            echo "🧪 Running unit tests..."
-                            sh """
-                                docker run --rm --name ${env.DOCKER_BUILDER_NAME}-test \
-                                    -v "${WORKSPACE}:/app" \
-                                    -v ${env.BUILD_CACHE} \
-                                    -w /app \
-                                    ${env.BUILD_IMAGE} ${env.TEST_COMMAND}
-                            """
+                            echo "Running unit tests..."
+                            sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME}-test -v \"${WORKSPACE}:/app/\" -v ${env.BUILD_CACHE} -w /app/Hamariadb  ${env.BUILD_IMAGE} ${env.TEST_COMMAND}"
                         }
                     }
                 }
+
+                // stage('SonarQube Scan') {
+                //     steps {
+                //         // TODO: Thêm lệnh scan SonarQube tại đây
+                //         echo "Skipping SonarQube Scan (placeholder)."
+                //     }
+                // }
             }
         }
 
         stage('Build Container') {
             steps {
-                milestone(label: "Milestone: Docker Build")
+                milestone(ordinal: null, label: "Milestone: Docker Build")
                 timeout(time: 10, unit: 'MINUTES') {
-                    echo "🐳 Building Docker image ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}"
+                    echo "Building Docker image ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}"
+                    // Yêu cầu có file Dockerfile ở thư mục gốc project
                     sh "docker build -t ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} -t ${env.DOCKER_IMAGE}:latest-${env.DEPLOY_ENV} ."
                 }
             }
@@ -131,6 +128,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
+                    // Block này sẽ load các credentials từ Jenkins một cách an toàn
                     withCredentials([
                         string(credentialsId: 'db-url-dev', variable: 'DB_URL'),
                         string(credentialsId: 'db-username-dev', variable: 'DB_USERNAME'),
@@ -142,18 +140,13 @@ pipeline {
                         string(credentialsId: 'telegram-admin-chat-id-dev', variable: 'TELEGRAM_ADMIN_CHAT_ID')
                     ]) {
                         lock(resource: "deploy-${env.SERVICE_NAME}", inversePrecedence: true) {
-                            milestone(label: "Milestone: Deploy")
-                            echo "🚀 Deploying ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}"
+                            milestone(ordinal: null, label: "Milestone: Deploy")
+                            echo "Deploying ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}..."
                             timeout(time: 5, unit: 'MINUTES') {
                                 sh "docker stop ${env.SERVICE_NAME} || true"
                                 sh "docker rm ${env.SERVICE_NAME} || true"
-                                sh """
-                                    docker run -d --network ${env.DOCKER_NETWORK} \
-                                        --name ${env.SERVICE_NAME} \
-                                        -p ${env.SERVICE_PORT_PUBLISH}:${env.SERVICE_PORT_LOCAL} \
-                                        ${env.SERVICE_ARGS} \
-                                        ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}
-                                """
+                                // Biến SERVICE_ARGS sẽ được sử dụng ở đây, với các giá trị credentials đã load
+                                sh "docker run -d --network ${env.DOCKER_NETWORK} --name ${env.SERVICE_NAME} -p ${env.SERVICE_PORT_PUBLISH}:${env.SERVICE_PORT_LOCAL} ${env.SERVICE_ARGS} ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}"
                             }
                         }
                     }
@@ -165,13 +158,15 @@ pipeline {
             steps {
                 timeout(time: 3, unit: 'MINUTES') {
                     waitUntil(initialRecurrencePeriod: 5000, quiet: false) {
+                        // SỬA LỖI: Bọc logic script vào trong khối script { ... }
                         script {
-                            echo "🔎 Performing health check..."
-                            def result = sh(script: "docker exec ${env.SERVICE_NAME} bash -c '${HEALTH_CHECK_CMD}'", returnStatus: true)
-                            return result == 0
+                            echo "Performing health check..."
+                            def healthCheckResult = sh(script: "docker exec ${env.SERVICE_NAME} bash -c '${HEALTH_CHECK_CMD}'", returnStatus: true)
+                            // Trả về true nếu health check thành công (exit code = 0)
+                            return healthCheckResult == 0
                         }
                     }
-                    echo "✅ Health check passed!"
+                    echo "Health check passed!"
                 }
             }
         }
@@ -179,14 +174,15 @@ pipeline {
 
     post {
         always {
-            echo '🏁 Pipeline finished.'
-            cleanWs()
+            echo 'Pipeline finished.'
+            cleanWs() // Dọn dẹp workspace
         }
         success {
-            echo '✅ SUCCESS!'
+            echo 'SUCCESS!'
         }
         failure {
-            echo '❌ FAILURE!'
+            echo 'FAILURE!'
+            // TODO: Thêm bước gửi thông báo (ví dụ: Slack, Email)
         }
     }
 }
