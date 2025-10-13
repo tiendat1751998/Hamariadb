@@ -10,7 +10,7 @@ pipeline {
 
     environment {
         // --- Cấu hình Project ---
-        APP_PROJECT = 'hamariadb' // Dùng chữ thường để tương thích Docker
+        APP_PROJECT = 'HAmarriadb' // Dùng chữ thường để tương thích Docker
         APP_CODE = 'Hamariadb'
         APP_REPO_URL = 'https://github.com/tiendat1751998/Hamariadb.git' // <-- TODO: Cập nhật URL Git repo của bạn
         APP_REPO_BRANCH = 'datdt' // <-- TODO: Cập nhật branch của bạn
