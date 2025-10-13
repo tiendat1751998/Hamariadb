@@ -45,7 +45,7 @@ pipeline {
         BUILD_COMMAND = 'mvn clean package -DskipTests'
         TEST_COMMAND = 'mvn test'
         BUILD_CACHE = "devops-cache-maven-${APP_PROJECT}:/root/.m2" // Volume cache cho Maven
-        BUILD_CHECK_CMD = 'ls target/*.jar'
+        BUILD_CHECK_CMD = 'ls Hamariadb/target/*.jar'
         
         // --- Health Check ---
         // Yêu cầu có dependency spring-boot-starter-actuator
