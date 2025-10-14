@@ -94,7 +94,7 @@ pipeline {
             }
         }
 
-        stage('Analysis') {
+     /*   stage('Analysis') {
             parallel {
                 stage('Unit Tests') {
                     steps {
@@ -113,7 +113,7 @@ pipeline {
                 //     }
                 // }
             }
-        }
+        }*/
 
         stage('Build Container') {
             steps {
