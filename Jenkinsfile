@@ -100,7 +100,8 @@ pipeline {
                     steps {
                         timeout(time: 10, unit: 'MINUTES') {
                             echo "Running unit tests..."
-                            sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME}-test -v \"${WORKSPACE}:/app/\" -v ${env.BUILD_CACHE} -w /app/Hamariadb  ${env.BUILD_IMAGE} ${env.TEST_COMMAND}"
+                          // Sửa trong stage('Unit Tests')
+                            sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME}-test -v \"${WORKSPACE}/Hamariadb:/app/Hamariadb\" -v ${env.BUILD_CACHE} -w /app/Hamariadb ${env.BUILD_IMAGE} ${env.TEST_COMMAND}"
                         }
                     }
                 }
