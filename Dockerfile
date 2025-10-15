@@ -1,7 +1,25 @@
-# Stage 1: Sử dụng base image có JDK 17 để chạy ứng dụng
-FROM eclipse-temurin:17-jdk-jammy
+# --- GIAI ĐOẠN 1: BUILD ---
+# Đặt tên cho giai đoạn này là "builder"
+FROM maven:3.9-eclipse-temurin-17 AS builder
 
-# Đặt các biến cho user/group để chạy dưới quyền non-root (bảo mật hơn)
+# Đặt thư mục làm việc
+WORKDIR /app
+
+# Copy file pom.xml trước để tận dụng cache của Docker
+# Nếu pom.xml không đổi, Docker sẽ không cần tải lại dependency
+COPY Hamariadb/pom.xml ./pom.xml
+RUN mvn dependency:go-offline
+
+# Copy toàn bộ mã nguồn và thực hiện build
+COPY Hamariadb/src ./src
+RUN mvn clean package -DskipTests
+
+
+# --- GIAI ĐOẠN 2: RUNTIME ---
+# Sử dụng một base image nhẹ hơn chỉ chứa JRE để chạy
+FROM eclipse-temurin:17-jre-jammy
+
+# Các biến cho user non-root
 ARG APP_USER=hamaria
 ARG APP_GROUP=hamaria
 ARG UID=1001
@@ -14,18 +32,18 @@ RUN groupadd -g ${GID} ${APP_GROUP} && \
 # Đặt thư mục làm việc
 WORKDIR /app
 
-# Sao chép file JAR đã được build từ thư mục target vào container
-# Tên file JAR có thể thay đổi, nên dùng ký tự đại diện *.jar
-COPY Hamariadb/target/*.jar app.jar
+# *** ĐÂY LÀ ĐIỂM QUAN TRỌNG ***
+# Copy file JAR đã được build từ giai đoạn "builder"
+COPY --from=builder /app/target/*.jar app.jar
 
-# Thay đổi quyền sở hữu của thư mục và file JAR
+# Thay đổi quyền sở hữu
 RUN chown -R ${APP_USER}:${APP_GROUP} /app
 
 # Chuyển sang user non-root
 USER ${APP_USER}
 
-# Mở port mà ứng dụng sẽ chạy
+# Mở port
 EXPOSE 8080
 
-# Lệnh để khởi chạy ứng dụng
+# Lệnh chạy ứng dụng
 ENTRYPOINT ["java", "-jar", "app.jar"]
