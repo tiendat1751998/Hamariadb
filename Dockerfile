@@ -5,12 +5,12 @@ FROM maven:3.9-eclipse-temurin-17 AS builder
 # Đặt thư mục làm việc
 WORKDIR /app
 
-# SỬA LỖI: Copy file pom.xml từ thư mục con Hamariadb
-COPY Hamariadb/pom.xml ./pom.xml
+# SỬA LỖI: Copy trực tiếp pom.xml từ gốc (không có thư mục con Hamariadb)
+COPY pom.xml .
 RUN mvn dependency:go-offline
 
-# SỬA LỖI: Copy mã nguồn từ thư mục con Hamariadb
-COPY Hamariadb/src ./src
+# SỬA LỖI: Copy trực tiếp thư mục src từ gốc
+COPY src ./src
 RUN mvn clean package -DskipTests
 
 
@@ -31,7 +31,7 @@ RUN groupadd -g ${GID} ${APP_GROUP} && \
 # Đặt thư mục làm việc
 WORKDIR /app
 
-# SỬA LỖI: Copy file JAR từ đúng đường dẫn trong stage "builder"
+# Copy file JAR từ đúng đường dẫn trong stage "builder"
 COPY --from=builder /app/target/*.jar app.jar
 
 # Thay đổi quyền sở hữu
