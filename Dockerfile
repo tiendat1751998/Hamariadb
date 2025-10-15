@@ -34,7 +34,7 @@ WORKDIR /app
 
 # *** ĐÂY LÀ ĐIỂM QUAN TRỌNG ***
 # Copy file JAR đã được build từ giai đoạn "builder"
-COPY --from=builder /app/target/*.jar app.jar
+COPY --from=builder /src/main/target/*.jar app.jar
 
 # Thay đổi quyền sở hữu
 RUN chown -R ${APP_USER}:${APP_GROUP} /app
