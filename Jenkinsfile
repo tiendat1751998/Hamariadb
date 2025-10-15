@@ -74,7 +74,7 @@ pipeline {
                 timeout(time: 15, unit: 'MINUTES') { // Tăng thời gian chờ vì phải build cả code
                     echo "Building Docker image ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}"
                     // Dockerfile sẽ tự build code, test (nếu có), và tạo image cuối cùng
-                    sh "docker build -t ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} -t ${env.DOCKER_IMAGE}:latest-${env.DEPLOY_ENV} Hamariadb/"
+                    sh "docker build -t ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} -t ${env.DOCKER_IMAGE}:latest-${env.DEPLOY_ENV} -f Dockerfile ."
                 }
             }
         }
