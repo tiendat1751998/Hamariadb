@@ -5,12 +5,11 @@ FROM maven:3.9-eclipse-temurin-17 AS builder
 # Đặt thư mục làm việc
 WORKDIR /app
 
-# Copy file pom.xml trước để tận dụng cache của Docker
-# Nếu pom.xml không đổi, Docker sẽ không cần tải lại dependency
+# SỬA LỖI: Copy file pom.xml từ thư mục con Hamariadb
 COPY Hamariadb/pom.xml ./pom.xml
 RUN mvn dependency:go-offline
 
-# Copy toàn bộ mã nguồn và thực hiện build
+# SỬA LỖI: Copy mã nguồn từ thư mục con Hamariadb
 COPY Hamariadb/src ./src
 RUN mvn clean package -DskipTests
 
@@ -32,9 +31,8 @@ RUN groupadd -g ${GID} ${APP_GROUP} && \
 # Đặt thư mục làm việc
 WORKDIR /app
 
-# *** ĐÂY LÀ ĐIỂM QUAN TRỌNG ***
-# Copy file JAR đã được build từ giai đoạn "builder"
-COPY --from=builder /src/main/target/*.jar app.jar
+# SỬA LỖI: Copy file JAR từ đúng đường dẫn trong stage "builder"
+COPY --from=builder /app/target/*.jar app.jar
 
 # Thay đổi quyền sở hữu
 RUN chown -R ${APP_USER}:${APP_GROUP} /app

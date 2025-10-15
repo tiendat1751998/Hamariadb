@@ -1,20 +1,17 @@
 pipeline {
-    agent any //aent này cần cài đặt Docker
+    agent any // agent này cần cài đặt Docker
 
     options {
-        // timestamps() // Lỗi này xảy ra nếu plugin 'Timestamper' chưa được cài. Đã tạm thời comment.
         timeout(time: 30, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '10'))
-        // ansiColor('xterm') // Lỗi này xảy ra nếu plugin 'AnsiColor' chưa được cài. Đã tạm thời comment.
     }
 
     environment {
         // --- Cấu hình Project ---
         APP_PROJECT = 'HAmarriadb' // Dùng chữ thường để tương thích Docker
         APP_CODE = 'Hamariadb'
-        APP_REPO_URL = 'https://github.com/tiendat1751998/Hamariadb.git' // <-- TODO: Cập nhật URL Git repo của bạn
-        APP_REPO_BRANCH = 'datdt' // <-- TODO: Cập nhật branch của bạn
- // <-- TODO: Cấu hình ID credentials Git nếu repo là private
+        APP_REPO_URL = 'https://github.com/tiendat1751998/Hamariadb.git'
+        APP_REPO_BRANCH = 'datdt'
 
         // --- Cấu hình Deploy ---
         DEPLOY_ENV = 'dev'
@@ -23,8 +20,6 @@ pipeline {
         SERVICE_PORT_LOCAL = '8080'
         SERVICE_NAME = "${DEPLOY_ENV}-${APP_PROJECT}"
         
-        // Các tham số cho lệnh 'docker run'.
-        // Các giá trị nhạy cảm sẽ được load từ Jenkins Credentials ở stage Deploy.
         SERVICE_ARGS = """
             -e SPRING_PROFILES_ACTIVE=${DEPLOY_ENV} 
             -e SERVER_PORT=${SERVICE_PORT_LOCAL} 
@@ -40,15 +35,7 @@ pipeline {
             -e TELEGRAM_ADMIN_CHAT_ID=\${TELEGRAM_ADMIN_CHAT_ID}
         """
 
-        // --- Cấu hình Build Tool (Maven & JDK 17) ---
-        BUILD_IMAGE = 'maven:3.9-eclipse-temurin-17'
-        BUILD_COMMAND = 'mvn clean package -DskipTests'
-        TEST_COMMAND = 'mvn test'
-        BUILD_CACHE = "devops-cache-maven-${APP_PROJECT}:/root/.m2" // Volume cache cho Maven
-        BUILD_CHECK_CMD = 'ls /app/Hamariadb/target/HAMariadb-0.0.1-SNAPSHOT.jar'
-        
         // --- Health Check --- 
-        // Yêu cầu có dependency spring-boot-starter-actuator
         HEALTH_CHECK_CMD = 'curl -f http://localhost:8080/api/actuator/health || exit 1'
     }
 
@@ -60,7 +47,6 @@ pipeline {
                     $class: 'GitSCM',
                     userRemoteConfigs: [[
                         url: env.APP_REPO_URL,
-                        // credentialsId: env.APP_REPO_CREDENTIALS,
                     ]],
                     branches: [[
                         name: "*/${env.APP_REPO_BRANCH}"
@@ -76,51 +62,18 @@ pipeline {
                     env.GIT_SHORT_COMMIT_APP = env.GIT_COMMIT_APP[0..6]
                     env.DOCKER_IMAGE = "${env.APP_PROJECT}/${env.APP_CODE}".toLowerCase()
                     env.DOCKER_TAG = "${env.DEPLOY_ENV}-${env.GIT_SHORT_COMMIT_APP}"
-                    env.DOCKER_BUILDER_NAME = "builder-${env.SERVICE_NAME}-${BUILD_NUMBER}"
                     currentBuild.displayName = "#${BUILD_NUMBER} - ${env.GIT_SHORT_COMMIT_APP}"
                 }
             }
         }
 
-        stage('Build Code') {
-            steps {
-                milestone(ordinal: null, label: "Milestone: Build")
-                timeout(time: 15, unit: 'MINUTES') {
-                    echo "Building with Maven..."
-                    sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME} -v \"${WORKSPACE}/Hamariadb:/app/Hamariadb\" -v ${env.BUILD_CACHE} -w /app/Hamariadb  ${env.BUILD_IMAGE} ${env.BUILD_COMMAND}"
-                    echo "Checking for build artifact..."
-                    sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME}-check -v \"${WORKSPACE}/Hamariadb:/app/Hamariadb\" -w /app/Hamariadb ${env.BUILD_IMAGE} ${env.BUILD_CHECK_CMD}"
-                }
-            }
-        }
-
-     /*   stage('Analysis') {
-            parallel {
-                stage('Unit Tests') {
-                    steps {
-                        timeout(time: 10, unit: 'MINUTES') {
-                            echo "Running unit tests..."
-                          // Sửa trong stage('Unit Tests')
-                            sh "docker run --rm --name ${env.DOCKER_BUILDER_NAME}-test -v \"${WORKSPACE}/Hamariadb:/app/Hamariadb\" -v ${env.BUILD_CACHE} -w /app/Hamariadb ${env.BUILD_IMAGE} "
-                        }
-                    }
-                }
-
-                // stage('SonarQube Scan') {
-                //     steps {
-                //         // TODO: Thêm lệnh scan SonarQube tại đây
-                //         echo "Skipping SonarQube Scan (placeholder)."
-                //     }
-                // }
-            }
-        }*/
-
+        // LOẠI BỎ STAGE 'Build Code' VÀ 'Analysis' VÌ Dockerfile SẼ LÀM VIỆC NÀY
         stage('Build Container') {
             steps {
                 milestone(ordinal: null, label: "Milestone: Docker Build")
-                timeout(time: 10, unit: 'MINUTES') {
+                timeout(time: 15, unit: 'MINUTES') { // Tăng thời gian chờ vì phải build cả code
                     echo "Building Docker image ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}"
-                    // Yêu cầu có file Dockerfile ở thư mục gốc project
+                    // Dockerfile sẽ tự build code, test (nếu có), và tạo image cuối cùng
                     sh "docker build -t ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} -t ${env.DOCKER_IMAGE}:latest-${env.DEPLOY_ENV} ."
                 }
             }
@@ -129,7 +82,6 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Block này sẽ load các credentials từ Jenkins một cách an toàn
                     withCredentials([
                         string(credentialsId: 'db-url-dev', variable: 'DB_URL'),
                         string(credentialsId: 'db-username-dev', variable: 'DB_USERNAME'),
@@ -146,7 +98,6 @@ pipeline {
                             timeout(time: 5, unit: 'MINUTES') {
                                 sh "docker stop ${env.SERVICE_NAME} || true"
                                 sh "docker rm ${env.SERVICE_NAME} || true"
-                                // Biến SERVICE_ARGS sẽ được sử dụng ở đây, với các giá trị credentials đã load
                                 sh "docker run -d --network ${env.DOCKER_NETWORK} --name ${env.SERVICE_NAME} -p ${env.SERVICE_PORT_PUBLISH}:${env.SERVICE_PORT_LOCAL} ${env.SERVICE_ARGS} ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}"
                             }
                         }
@@ -159,11 +110,9 @@ pipeline {
             steps {
                 timeout(time: 3, unit: 'MINUTES') {
                     waitUntil(initialRecurrencePeriod: 5000, quiet: false) {
-                        // SỬA LỖI: Bọc logic script vào trong khối script { ... }
                         script {
                             echo "Performing health check..."
                             def healthCheckResult = sh(script: "docker exec ${env.SERVICE_NAME} bash -c '${HEALTH_CHECK_CMD}'", returnStatus: true)
-                            // Trả về true nếu health check thành công (exit code = 0)
                             return healthCheckResult == 0
                         }
                     }
@@ -176,14 +125,13 @@ pipeline {
     post {
         always {
             echo 'Pipeline finished.'
-            cleanWs() // Dọn dẹp workspace
+            cleanWs()
         }
         success {
             echo 'SUCCESS!'
         }
         failure {
             echo 'FAILURE!'
-            // TODO: Thêm bước gửi thông báo (ví dụ: Slack, Email)
         }
     }
 }
