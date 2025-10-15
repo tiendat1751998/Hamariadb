@@ -21,19 +21,19 @@ pipeline {
         SERVICE_NAME = "${DEPLOY_ENV}-${APP_PROJECT}"
         
         SERVICE_ARGS = """
-            -e SPRING_PROFILES_ACTIVE=${DEPLOY_ENV} 
-            -e SERVER_PORT=${SERVICE_PORT_LOCAL} 
-            -e SERVER_CONTEXT_PATH=/api
-            -e DB_URL=\${DB_URL}
-            -e DB_USERNAME=\${DB_USERNAME}
-            -e DB_PASSWORD=\${DB_PASSWORD}
-            -e JPA_DDL_AUTO=update
-            -e JWT_SECRET=\${JWT_SECRET}
-            -e SERVER_PRIVATE_KEY=\${SERVER_PRIVATE_KEY}
-            -e SERVER_PUBLIC_KEY=\${SERVER_PUBLIC_KEY}
-            -e TELEGRAM_BOT_TOKEN=\${TELEGRAM_BOT_TOKEN}
-            -e TELEGRAM_ADMIN_CHAT_ID=\${TELEGRAM_ADMIN_CHAT_ID}
-        """
+                -e SPRING_PROFILES_ACTIVE=${DEPLOY_ENV} 
+                -e SERVER_PORT=${SERVICE_PORT_LOCAL} 
+                -e SERVER_CONTEXT_PATH=/api
+                -e DB_URL=\${DB_URL}
+                -e DB_USERNAME=\${DB_USERNAME}
+                -e DB_PASSWORD=\${DB_PASSWORD}
+                -e JPA_DDL_AUTO=update
+                -e JWT_SECRET=\${JWT_SECRET}
+                -e SERVER_PRIVATE_KEY=\${SERVER_PRIVATE_KEY}
+                -e SERVER_PUBLIC_KEY=\${SERVER_PUBLIC_KEY}
+                -e TELEGRAM_BOT_TOKEN=\${TELEGRAM_BOT_TOKEN}
+                -e TELEGRAM_ADMIN_CHAT_ID=\${TELEGRAM_ADMIN_CHAT_ID}
+            """.replaceAll('\\s+', ' ').trim()
 
         // --- Health Check --- 
         HEALTH_CHECK_CMD = 'curl -f http://localhost:8080/api/actuator/health || exit 1'
