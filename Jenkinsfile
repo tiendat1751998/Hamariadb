@@ -81,7 +81,7 @@ pipeline {
                 }
             }
         }
-
+/*
         stage('Build Code') {
             steps {
                 milestone(ordinal: null, label: "Milestone: Build")
@@ -93,7 +93,7 @@ pipeline {
                 }
             }
         }
-
+*/
      /*   stage('Analysis') {
             parallel {
                 stage('Unit Tests') {
