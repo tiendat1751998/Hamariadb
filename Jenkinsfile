@@ -27,7 +27,7 @@ pipeline {
                 -e DB_URL=\${DB_URL}
                 -e DB_USERNAME=\${DB_USERNAME}
                 -e DB_PASSWORD=\${DB_PASSWORD}
-                -e JPA_DDL_AUTO=update
+                -e JPA_DDL_AUTO=validate
                 -e JWT_SECRET=\${JWT_SECRET}
                 -e JWT_EXPIRATION=\${JWT_EXPIRATION}
                 -e JWT_REFRESH_EXPIRATION=\${JWT_REFRESH_EXPIRATION} 
