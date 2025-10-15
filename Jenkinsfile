@@ -29,6 +29,8 @@ pipeline {
                 -e DB_PASSWORD=\${DB_PASSWORD}
                 -e JPA_DDL_AUTO=update
                 -e JWT_SECRET=\${JWT_SECRET}
+                -e JWT_EXPIRATION=\${JWT_EXPIRATION}
+                -e JWT_REFRESH_EXPIRATION=\${JWT_REFRESH_EXPIRATION} 
                 -e SERVER_PRIVATE_KEY=\${SERVER_PRIVATE_KEY}
                 -e SERVER_PUBLIC_KEY=\${SERVER_PUBLIC_KEY}
                 -e TELEGRAM_BOT_TOKEN=\${TELEGRAM_BOT_TOKEN}
