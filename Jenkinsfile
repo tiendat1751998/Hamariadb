@@ -89,6 +89,8 @@ pipeline {
                         string(credentialsId: 'db-username-dev', variable: 'DB_USERNAME'),
                         string(credentialsId: 'db-password-dev', variable: 'DB_PASSWORD'),
                         string(credentialsId: 'jwt-secret-dev', variable: 'JWT_SECRET'),
+                        string(credentialsId: 'jwt-expiration-dev', variable: 'JWT_EXPIRATION'),
+                        string(credentialsId: 'jwt-refresh-expiration-dev', variable: 'JWT_REFRESH_EXPIRATION'),
                         string(credentialsId: 'server-private-key-dev', variable: 'SERVER_PRIVATE_KEY'),
                         string(credentialsId: 'server-public-key-dev', variable: 'SERVER_PUBLIC_KEY'),
                         string(credentialsId: 'telegram-bot-token-dev', variable: 'TELEGRAM_BOT_TOKEN'),
