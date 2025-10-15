@@ -16,7 +16,7 @@ WORKDIR /app
 
 # Sao chép file JAR đã được build từ thư mục target vào container
 # Tên file JAR có thể thay đổi, nên dùng ký tự đại diện *.jar
-COPY /var/jenkins_home/workspace/HAmarriadb/Hamariadb/target/*.jar app.jar
+COPY /app/Hamariadb/target/*.jar app.jar
 
 # Thay đổi quyền sở hữu của thư mục và file JAR
 RUN chown -R ${APP_USER}:${APP_GROUP} /app
