@@ -2,6 +2,11 @@ package com.datdevops.hamariadb.security;
 
 
 import com.datdevops.hamariadb.config.JwtTokenUtil;
+
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -38,14 +43,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String jwtToken = null;
 
         // JWT Token is in the form "Bearer token". Remove Bearer word and get only the Token
-        if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
+      if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
             jwtToken = requestTokenHeader.substring(7);
             try {
                 username = jwtTokenUtil.getUsernameFromToken(jwtToken);
+            } catch (IllegalArgumentException e) {
+                logger.error("Unable to get JWT Token", e);
+            } catch (ExpiredJwtException e) {
+                logger.warn("JWT Token has expired");
+            } catch (SignatureException e) {
+                logger.error("JWT signature does not match locally computed signature. JWT Secret Key might be incorrect.");
+            } catch (MalformedJwtException e) {
+                logger.error("Invalid JWT token: {}", e.getMessage());
+            } catch (UnsupportedJwtException e) {
+                logger.error("Unsupported JWT token: {}", e.getMessage());
             } catch (Exception e) {
-                logger.warn("JWT Token has expired or is invalid");
+                logger.error("An error occurred during JWT token parsing", e);
+            }
+        } else {
+            if (requestTokenHeader != null) {
+                logger.warn("JWT Token does not begin with Bearer String");
             }
         }
+
 
         // Once we get the token validate it.
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
