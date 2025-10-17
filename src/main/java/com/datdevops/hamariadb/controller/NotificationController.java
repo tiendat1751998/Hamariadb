@@ -1,15 +1,23 @@
 package com.datdevops.hamariadb.controller;
 
 
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.datdevops.hamariadb.dto.response.ApiResponse;
 import com.datdevops.hamariadb.entity.TelegramNotification;
 import com.datdevops.hamariadb.service.notification.NotificationService;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
@@ -52,7 +60,7 @@ public class NotificationController {
         String username = authentication.getName();
         log.info("Sending test notification for user: {}", username);
 
-        notificationService.sendBalanceNotification("TEST_ACCOUNT", "1,000,000 VND", "10,000,000 VND", "Test notification");
+        notificationService.sendBalanceNotification("admin", "1,000,000 VND", "10,000,000 VND", "Test notification");
         return ResponseEntity.ok(ApiResponse.success(null, "Test notification sent"));
     }
 }
