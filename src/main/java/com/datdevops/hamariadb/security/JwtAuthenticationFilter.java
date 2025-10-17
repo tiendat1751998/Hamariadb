@@ -1,11 +1,7 @@
 package com.datdevops.hamariadb.security;
 
 
-import com.datdevops.hamariadb.config.JwtTokenUtil;
-
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.UnsupportedJwtException;
+import java.io.IOException;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,11 +11,13 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.datdevops.hamariadb.config.JwtTokenUtil;
+
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -51,12 +49,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 logger.error("Unable to get JWT Token", e);
             } catch (ExpiredJwtException e) {
                 logger.warn("JWT Token has expired");
-            } catch (SignatureException e) {
-                logger.error("JWT signature does not match locally computed signature. JWT Secret Key might be incorrect.");
-            } catch (MalformedJwtException e) {
-                logger.error("Invalid JWT token: {}", e.getMessage());
-            } catch (UnsupportedJwtException e) {
-                logger.error("Unsupported JWT token: {}", e.getMessage());
             } catch (Exception e) {
                 logger.error("An error occurred during JWT token parsing", e);
             }
