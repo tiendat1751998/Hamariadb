@@ -110,7 +110,7 @@ pipeline {
             }
         }
 
-       /* stage('Health Check') {
+        stage('Health Check') {
             steps {
                 timeout(time: 3, unit: 'MINUTES') {
                     waitUntil(initialRecurrencePeriod: 5000, quiet: false) {
@@ -123,7 +123,7 @@ pipeline {
                     echo "Health check passed!"
                 }
             }
-        }*/
+        }
     
     }
     post {
