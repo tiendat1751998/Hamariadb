@@ -56,11 +56,12 @@ public class NotificationController {
     }
 
     @PostMapping("/test")
-    public ResponseEntity<ApiResponse<Void>> sendTestNotification(Authentication authentication) {
+    public ResponseEntity<ApiResponse<String>> sendTestNotification(Authentication authentication) {
         String username = authentication.getName();
         log.info("Sending test notification for user: {}", username);
 
-        notificationService.sendBalanceNotification("admin", "1,000,000 VND", "10,000,000 VND", "Test notification");
-        return ResponseEntity.ok(ApiResponse.success(null, "Test notification sent"));
+        String mess = notificationService.sendBalanceNotification("admin", "1,000,000 VND", "10,000,000 VND", "Test notification");
+
+        return ResponseEntity.ok(ApiResponse.success(mess, "Test notification sent"));
     }
 }
