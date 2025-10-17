@@ -1,15 +1,17 @@
 package com.datdevops.hamariadb.service.notification;
 
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
 import com.datdevops.hamariadb.entity.NotificationStatus;
 import com.datdevops.hamariadb.entity.TelegramMessageType;
 import com.datdevops.hamariadb.entity.TelegramNotification;
 import com.datdevops.hamariadb.repository.dao.TelegramNotificationRepository;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -24,13 +26,14 @@ public class NotificationService {
         this.telegramService = telegramService;
     }
 
-    public void sendBalanceNotification(String accountNumber, String amount, String balance, String description) {
+    public String sendBalanceNotification(String accountNumber, String amount, String balance, String description) {
         String message = String.format(
                 "💰 Biến động số dư\nTài khoản: %s\nSố tiền: %s\nSố dư: %s\nNội dung: %s",
                 accountNumber, amount, balance, description
         );
 
-        saveAndSendNotification("SYSTEM", "BALANCE_UPDATE", message);
+         saveAndSendNotification("SYSTEM", "BALANCE_UPDATE", message);
+         return message;
     }
 
     public void sendTransactionSuccessNotification(String accountNumber, String amount, String description) {
