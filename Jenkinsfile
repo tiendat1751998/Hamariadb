@@ -123,9 +123,9 @@ pipeline {
                     echo "Health check passed!"
                 }
             }
-        }
-    }*/
-
+        }*/
+    
+    }
     post {
         always {
             echo 'Pipeline finished.'
