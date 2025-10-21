@@ -62,7 +62,7 @@ public class UserManagementService {
         user.setPhoneNumber(request.getPhoneNumber());
         user.setFullName(request.getFullName());
         user.setStatus(UserStatus.ACTIVE);
-        account.setAccountNumber(request.getAccount().iterator().next().getAccountNumber());
+        account.setAccountNumber(request.getAccount().iterator().next());
         account.setUser(user);
         accounts.add(account);
         user.setAccounts(accounts);
