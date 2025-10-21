@@ -1,22 +1,27 @@
 package com.datdevops.hamariadb.service.admin;
 
 
-import com.datdevops.hamariadb.dto.request.UserCreateRequest;
-import com.datdevops.hamariadb.dto.response.UserResponse;
-import com.datdevops.hamariadb.entity.User;
-import com.datdevops.hamariadb.entity.UserStatus;
-import com.datdevops.hamariadb.repository.dao.RoleRepository;
-import com.datdevops.hamariadb.repository.mapper.EntityMapper;
-import lombok.extern.slf4j.Slf4j;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import  com.datdevops.hamariadb.repository.dao.UserRepository;
-import com.datdevops.hamariadb.entity.Role;
-import com.datdevops.hamariadb.entity.UserRole;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.datdevops.hamariadb.dto.request.UserCreateRequest;
+import com.datdevops.hamariadb.dto.response.UserResponse;
+import com.datdevops.hamariadb.entity.Account;
+import com.datdevops.hamariadb.entity.Role;
+import  com.datdevops.hamariadb.entity.User;
+import com.datdevops.hamariadb.entity.UserRole;
+import com.datdevops.hamariadb.entity.UserStatus;
+import com.datdevops.hamariadb.repository.dao.RoleRepository;
+import com.datdevops.hamariadb.repository.dao.UserRepository;
+import com.datdevops.hamariadb.repository.mapper.EntityMapper;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -47,7 +52,8 @@ public class UserManagementService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already exists: " + request.getEmail());
         }
-
+    Set<Account> accounts = new HashSet<>();
+    Account account = new Account();
         // Create new user
         User user = new User();
         user.setUsername(request.getUsername());
@@ -56,6 +62,9 @@ public class UserManagementService {
         user.setPhoneNumber(request.getPhoneNumber());
         user.setFullName(request.getFullName());
         user.setStatus(UserStatus.ACTIVE);
+        account.setAccountNumber(request.getAccount());
+        accounts.add(account);
+        user.setAccounts(accounts);
 
         user = userRepository.save(user);
 
