@@ -38,9 +38,8 @@ public class EntityMapper {
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .account(user.getAccounts().stream()
-                        .findFirst()
-                        .map(Account::getAccountNumber)
-                        .orElse(null))
+                        .map(Account -> Account.getAccountNumber())
+                        .collect(Collectors.toList()))
                 .build();
     }
 
