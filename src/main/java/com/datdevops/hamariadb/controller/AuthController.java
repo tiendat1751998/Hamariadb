@@ -27,6 +27,11 @@ public class AuthController {
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
+    @PostMapping("/health")
+    public ResponseEntity<Void> health()  {
+        return ResponseEntity.ok().build();
+    }
+
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
