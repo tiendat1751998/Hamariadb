@@ -46,7 +46,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/v1/auth/**").permitAll()
                         .requestMatchers("/v1/login/**").permitAll()               // public endpoint
-                        .requestMatchers("/v1/admin/**").hasRole("admin")     // yêu cầu ROLE_ADMIN
+                        .requestMatchers("/v1/admin/**").hasRole("ADMIN")     // yêu cầu ROLE_ADMIN
                         .anyRequest().authenticated()                             // tất cả còn lại phải xác thực
                 )
                 .exceptionHandling(ex -> ex
