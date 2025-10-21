@@ -38,7 +38,7 @@ pipeline {
             """.replaceAll('\\s+', ' ').trim()
 
         // --- Health Check --- 
-        HEALTH_CHECK_CMD = 'curl -f http://localhost:8080/api/actuator/health || exit 1'
+        HEALTH_CHECK_CMD = 'curl -f http://localhost:8080/api/v1/auth/health || exit 1'
     }
 
     stages {
