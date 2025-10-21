@@ -6,6 +6,7 @@ import lombok.Data;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
+import java.util.Set;
 
 import com.datdevops.hamariadb.entity.Account;
 
@@ -29,5 +30,5 @@ public class UserCreateRequest {
     private List<String> roles;
 
     @NotBlank(message = "account name is required")
-    private String account;
+    private Set<Account> account;
 }
