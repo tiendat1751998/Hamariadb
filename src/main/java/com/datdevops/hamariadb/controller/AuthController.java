@@ -1,16 +1,21 @@
 package com.datdevops.hamariadb.controller;
 
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.datdevops.hamariadb.dto.request.ChangePasswordRequest;
 import com.datdevops.hamariadb.dto.request.LoginRequest;
 import com.datdevops.hamariadb.dto.response.ApiResponse;
 import com.datdevops.hamariadb.dto.response.LoginResponse;
 import com.datdevops.hamariadb.service.auth.AuthService;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
@@ -32,12 +37,11 @@ public class AuthController {
 
     @PostMapping("/change-password")
     public ResponseEntity<ApiResponse<Void>> changePassword(
-            @RequestParam String currentPassword,
-            @RequestParam String newPassword,
+            @Valid @RequestBody ChangePasswordRequest request,
             Authentication authentication) {
 
         String username = authentication.getName();
-        authService.changePassword(username, currentPassword, newPassword);
+        authService.changePassword(username, request.getCurrentPassword(), request.getNewPassword());
 
         return ResponseEntity.ok(ApiResponse.success(null, "Password changed successfully"));
     }
