@@ -63,6 +63,7 @@ public class UserManagementService {
         user.setFullName(request.getFullName());
         user.setStatus(UserStatus.ACTIVE);
         account.setAccountNumber(request.getAccount());
+        account.setUser(user);
         accounts.add(account);
         user.setAccounts(accounts);
 
