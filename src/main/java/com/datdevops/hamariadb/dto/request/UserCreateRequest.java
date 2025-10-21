@@ -30,5 +30,5 @@ public class UserCreateRequest {
     private List<String> roles;
 
     @NotBlank(message = "account name is required")
-    private Set<Account> account;
+    private Set<String> account;
 }
