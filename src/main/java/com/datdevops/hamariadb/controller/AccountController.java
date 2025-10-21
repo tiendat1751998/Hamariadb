@@ -37,7 +37,7 @@ public class AccountController {
         return ResponseEntity.ok(ApiResponse.success(balance, "Balance retrieved successfully"));
     }
 
-    @GetMapping
+    @GetMapping("/getaccount/")
     public ResponseEntity<ApiResponse<List<AccountBalanceResponse>>> getUserAccounts(
             Authentication authentication) {
 
