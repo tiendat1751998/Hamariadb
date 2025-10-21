@@ -1,11 +1,24 @@
 package com.datdevops.hamariadb.repository.mapper;
 
 
-import com.datdevops.hamariadb.dto.response.*;
-import com.datdevops.hamariadb.entity.*;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Component;
 
-import java.util.stream.Collectors;
+import com.datdevops.hamariadb.dto.response.AccountBalanceResponse;
+import com.datdevops.hamariadb.dto.response.BatchTransferResponse;
+import com.datdevops.hamariadb.dto.response.RecurringTransferResponse;
+import com.datdevops.hamariadb.dto.response.ScheduledTransferResponse;
+import com.datdevops.hamariadb.dto.response.TransactionHistoryResponse;
+import com.datdevops.hamariadb.dto.response.TransferResponse;
+import com.datdevops.hamariadb.dto.response.UserResponse;
+import com.datdevops.hamariadb.entity.Account;
+import com.datdevops.hamariadb.entity.BatchTransfer;
+import com.datdevops.hamariadb.entity.RecurringTransfer;
+import com.datdevops.hamariadb.entity.ScheduledTransfer;
+import com.datdevops.hamariadb.entity.Transaction;
+import com.datdevops.hamariadb.entity.Transfer;
+import com.datdevops.hamariadb.entity.User;
 
 @Component
 public class EntityMapper {
@@ -24,6 +37,10 @@ public class EntityMapper {
                 .lastLoginAt(user.getLastLoginAt())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
+                .account(user.getAccounts().stream()
+                        .findFirst()
+                        .map(Account::getAccountNumber)
+                        .orElse(null))
                 .build();
     }
 
