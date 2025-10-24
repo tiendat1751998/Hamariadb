@@ -1,23 +1,32 @@
 package com.datdevops.hamariadb.service.tranfer;
 
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.datdevops.hamariadb.dto.request.TransferRequest;
 import com.datdevops.hamariadb.dto.response.TransferResponse;
-import com.datdevops.hamariadb.entity.*;
+import com.datdevops.hamariadb.entity.Account;
+import com.datdevops.hamariadb.entity.Transaction;
+import com.datdevops.hamariadb.entity.TransactionStatus;
+import com.datdevops.hamariadb.entity.TransactionType;
+import com.datdevops.hamariadb.entity.Transfer;
+import com.datdevops.hamariadb.entity.TransferStatus;
+import com.datdevops.hamariadb.entity.TransferType;
+import com.datdevops.hamariadb.entity.User;
 import com.datdevops.hamariadb.repository.dao.AccountRepository;
 import com.datdevops.hamariadb.repository.dao.TransactionRepository;
 import com.datdevops.hamariadb.repository.dao.TransferRepository;
 import com.datdevops.hamariadb.repository.dao.UserRepository;
 import com.datdevops.hamariadb.repository.mapper.EntityMapper;
 import com.datdevops.hamariadb.service.notification.TelegramService;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -79,7 +88,7 @@ public class TransferService {
                     request.getDescription()
             );
 
-            return entityMapper.toTransferResponse(transfer);
+            return EntityMapper.toTransferResponse(transfer);
 
         } catch (Exception e) {
             // Mark transfer as failed
@@ -109,7 +118,7 @@ public class TransferService {
             throw new RuntimeException("Transfer amount exceeds maximum limit");
         }
 
-        if (fromAccount.getAvailableBalance().compareTo(amount) < 0) {
+        if (fromAccount.getAvailableBalance().compareTo(amount) < 0)  {
             throw new RuntimeException("Insufficient balance");
         }
 
