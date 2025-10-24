@@ -1,17 +1,23 @@
 package com.datdevops.hamariadb.service.notification;
 
 
-import com.datdevops.hamariadb.config.TelegramConfig;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.*;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import com.datdevops.hamariadb.config.TelegramConfig;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -33,7 +39,7 @@ public class TelegramService {
             return;
         }
 
-        String url = "https://api.telegram.org/bot" + telegramConfig.getBotToken() + "/sendMessage";
+        String url = "https://api.telegram.org/bot" +telegramConfig.getAdminChatId()+":"+ telegramConfig.getBotToken() + "/sendMessage";
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("chat_id", chatId);
