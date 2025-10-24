@@ -39,7 +39,7 @@ public class TelegramService {
             return;
         }
 
-        String url = "https://api.telegram.org/bot" +telegramConfig.getAdminChatId()+":"+ telegramConfig.getBotToken() + "/sendMessage";
+        String url = "https://api.telegram.org/bot" + telegramConfig.getBotToken() + "/sendMessage";
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("chat_id", chatId);
