@@ -84,6 +84,7 @@ public class TransferService {
             telegramService.sendBalanceUpdate(
                     fromAccount.getAccountNumber(),
                     request.getAmount().negate(),
+                    calculateFee(request),
                     fromAccount.getAvailableBalance(),
                     request.getDescription()
             );
