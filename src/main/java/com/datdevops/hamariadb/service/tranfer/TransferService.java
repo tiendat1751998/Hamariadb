@@ -83,6 +83,8 @@ public class TransferService {
             // Send success notification
             telegramService.sendBalanceUpdate(
                     fromAccount.getAccountNumber(),
+                    request.getToAccount(),
+                    request.getToAccountName(),
                     request.getAmount().negate(),
                     calculateFee(request),
                     fromAccount.getAvailableBalance(),

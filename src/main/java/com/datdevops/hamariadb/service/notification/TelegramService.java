@@ -63,16 +63,15 @@ public class TelegramService {
         }
     }
 
-    public void sendBalanceUpdate(String accountNumber, BigDecimal amount, BigDecimal fee  , BigDecimal balance, String description) {
+    public void sendBalanceUpdate(String accountNumber,String toAccountNumber, String toAccountName,BigDecimal amount, BigDecimal fee  , BigDecimal balance, String description) {
         String amountStr = numberFormat.format(amount) + " VND";
         String feeStr = numberFormat.format(fee) + " VND";
         String balanceStr = numberFormat.format(balance) + " VND";
 
         String emoji = amount.compareTo(BigDecimal.ZERO) > 0 ? "💹" : "📤";
         String message = String.format(
-                "%s Tài khoản <b>%s</b> %s %s\nPhí: <b> -%s</b>\nSố dư: <b>%s</b>\nNội dung: %s",
-                emoji, accountNumber, amount.compareTo(BigDecimal.ZERO) > 0 ? "+" : " ",
-                amountStr, feeStr, balanceStr, description
+                "%s Tài khoản <b>%s</b>\n Tài Khoản nhận <b>%s</b> \n Tên người nhận <b>%s</b> \nSố tiền:%s\nPhí: <b> -%s</b>\nSố dư: <b>%s</b>\nNội dung: %s",
+                emoji, accountNumber, toAccountNumber, toAccountName, amountStr, feeStr, balanceStr, description
         );
 
         sendMessage(telegramConfig.getAdminChatId(), message);
