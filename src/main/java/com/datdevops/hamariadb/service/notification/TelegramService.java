@@ -70,7 +70,7 @@ public class TelegramService {
         String emoji = amount.compareTo(BigDecimal.ZERO) > 0 ? "💹" : "📤";
         String message = String.format(
                 "%s Tài khoản <b>%s</b> %s %s\nSố dư: <b>%s</b>\nNội dung: %s",
-                emoji, accountNumber, amount.compareTo(BigDecimal.ZERO) > 0 ? "+" : "-",
+                emoji, accountNumber, amount.compareTo(BigDecimal.ZERO) > 0 ? "+" : " ",
                 amountStr, balanceStr, description
         );
 
