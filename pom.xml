@@ -32,6 +32,8 @@
         <jjwt.version>0.11.5</jjwt.version>
         <poi.version>5.4.0</poi.version>
         <telegram.version>6.9.7.1</telegram.version>
+        <logback.version>1.5.19</logback.version>
+        <tomcat.version>10.1.47</tomcat.version>
     </properties>
     <dependencies>
         <dependency>
@@ -125,6 +127,18 @@
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
         </dependency>
+
+        <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-core</artifactId>
+        <version>1.5.19</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-core</artifactId>
+        <version>10.1.47</version>
+    </dependency>
 
     </dependencies>
 
