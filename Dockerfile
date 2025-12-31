@@ -1,4 +1,4 @@
-# --- GIAI ĐOẠN 1: BUILD ---
+ # --- GIAI ĐOẠN 1: BUILD ---
 # Đặt tên cho giai đoạn này là "builder"
 FROM maven:3.9-eclipse-temurin-17 AS builder
 

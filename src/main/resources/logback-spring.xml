@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Biến để định nghĩa thư mục lưu log -->
+    <property name="LOGS_DIR" value="logs"/>
+
+    <!--
+    Appender để ghi log ra Console.
+    Rất hữu ích trong môi trường phát triển.
+    -->
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!--
+    Appender để ghi log vào file, có chức năng xoay vòng (rolling).
+    Log sẽ được lưu vào file và tự động nén lại khi đạt đến kích thước hoặc thời gian nhất định.
+    -->
+    <appender name="RollingFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS_DIR}/hamariadb.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Xoay vòng log hàng ngày -->
+            <fileNamePattern>${LOGS_DIR}/archived/hamariadb-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <!-- Kích thước tối đa của mỗi file log trước khi xoay vòng -->
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <!-- Giữ lại log trong 30 ngày -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!--
+    Cấu hình mức độ log (LOG LEVEL).
+    - ERROR: Lỗi nghiêm trọng ảnh hưởng đến hoạt động.
+    - WARN: Cảnh báo về những vấn đề tiềm ẩn.
+    - INFO: Thông tin về các hoạt động quan trọng của ứng dụng.
+    - DEBUG: Thông tin chi tiết cho việc gỡ lỗi.
+    - TRACE: Thông tin rất chi tiết, thường chỉ dùng trong quá trình phát triển sâu.
+    -->
+
+    <!-- Mức log mặc định cho toàn bộ ứng dụng -->
+    <root level="info">
+        <appender-ref ref="Console"/>
+        <appender-ref ref="RollingFile"/>
+    </root>
+
+    <!-- Cấu hình mức log riêng cho các package của dự án -->
+    <!-- Đặt là DEBUG để có thông tin chi tiết hơn khi phát triển -->
+    <logger name="com.datdevops.hamariadb" level="debug" additivity="false">
+        <appender-ref ref="Console"/>
+        <appender-ref ref="RollingFile"/>
+    </logger>
+
+    <!-- Giảm bớt log từ các thư viện bên ngoài để tránh nhiễu -->
+    <logger name="org.springframework" level="info"/>
+    <logger name="org.hibernate" level="warn"/>
+
+</configuration>
