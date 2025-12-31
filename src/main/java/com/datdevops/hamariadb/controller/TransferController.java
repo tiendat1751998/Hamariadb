@@ -20,6 +20,16 @@ import com.datdevops.hamariadb.service.tranfer.TransferService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Controller chính xử lý các loại giao dịch chuyển tiền khác nhau.
+ * Đóng vai trò là một điểm vào chung cho các chức năng chuyển tiền.
+ *
+ * @deprecated Cân nhắc tách các chức năng ra các controller riêng biệt
+ * (ví dụ: `SingleTransferController`, `BatchTransferController`) để mã nguồn rõ ràng hơn.
+ * Hiện tại, các endpoint đã được tách ra `BatchTransferController`, `RecurringTransferController`,
+ * và `ScheduledTransferController`. Lớp này có thể được giữ lại cho các giao dịch đơn lẻ
+ * hoặc được tái cấu trúc.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/v1/transfers")
@@ -34,6 +44,12 @@ public class TransferController {
         this.batchTransferService = batchTransferService;
     }
 
+    /**
+     * Endpoint để thực hiện một giao dịch chuyển tiền đơn lẻ.
+     * @param request Dữ liệu yêu cầu chuyển tiền.
+     * @param authentication Thông tin xác thực của người dùng.
+     * @return ResponseEntity chứa kết quả giao dịch.
+     */
     @PostMapping("/single")
     public ResponseEntity<ApiResponse<TransferResponse>> createTransfer(
             @Valid @RequestBody TransferRequest request,
@@ -46,6 +62,11 @@ public class TransferController {
         return ResponseEntity.ok(ApiResponse.success(response, "Transfer initiated successfully"));
     }
 
+    /**
+     * Endpoint để thực hiện chuyển tiền theo lô.
+     * @deprecated Endpoint này đã được chuyển sang {@link BatchTransferController}.
+     * Giữ lại ở đây có thể gây nhầm lẫn.
+     */
     @PostMapping("/batch")
     public ResponseEntity<ApiResponse<BatchTransferResponse>> createBatchTransfer(
             @RequestPart("request") BatchTransferRequest request,
@@ -59,7 +80,11 @@ public class TransferController {
         return ResponseEntity.ok(ApiResponse.success(response, "Batch transfer submitted for processing"));
     }
 
-   /*  @PostMapping("/scheduled")
+   /*
+    * Endpoint để tạo giao dịch theo lịch (đã được comment).
+    * @deprecated Chức năng này đã được triển khai trong {@link ScheduledTransferController}.
+    *
+    @PostMapping("/scheduled")
     public ResponseEntity<ApiResponse<TransferResponse>> createScheduledTransfer(
             @Valid @RequestBody TransferRequest request,
             Authentication authentication) {

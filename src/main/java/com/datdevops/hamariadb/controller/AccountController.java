@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Controller xử lý các yêu cầu liên quan đến tài khoản của người dùng,
+ * như xem số dư, lịch sử giao dịch.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/v1/accounts")
@@ -25,6 +29,12 @@ public class AccountController {
         this.accountService = accountService;
     }
 
+    /**
+     * Endpoint để lấy số dư của một tài khoản cụ thể.
+     * @param accountNumber Số tài khoản cần truy vấn.
+     * @param authentication Thông tin xác thực của người dùng.
+     * @return ResponseEntity chứa thông tin số dư.
+     */
     @GetMapping("/balance/{accountNumber}")
     public ResponseEntity<ApiResponse<AccountBalanceResponse>> getAccountBalance(
             @PathVariable String accountNumber,
@@ -37,6 +47,11 @@ public class AccountController {
         return ResponseEntity.ok(ApiResponse.success(balance, "Balance retrieved successfully"));
     }
 
+    /**
+     * Endpoint để lấy danh sách tất cả các tài khoản của người dùng đang đăng nhập.
+     * @param authentication Thông tin xác thực của người dùng.
+     * @return ResponseEntity chứa danh sách các tài khoản.
+     */
     @GetMapping("/getaccount/")
     public ResponseEntity<ApiResponse<List<AccountBalanceResponse>>> getUserAccounts(
             Authentication authentication) {
@@ -48,6 +63,17 @@ public class AccountController {
         return ResponseEntity.ok(ApiResponse.success(accounts, "Accounts retrieved successfully"));
     }
 
+    /**
+     * Endpoint để lấy lịch sử giao dịch của một tài khoản với các bộ lọc và phân trang.
+     * @param accountNumber Số tài khoản cần truy vấn.
+     * @param fromDate Lọc giao dịch từ ngày (định dạng ISO DATE_TIME, ví dụ: 2023-10-27T10:00:00).
+     * @param toDate Lọc giao dịch đến ngày.
+     * @param transactionType Lọc theo loại giao dịch (ví dụ: DEPOSIT, TRANSFER_OUT).
+     * @param page Trang hiện tại (mặc định là 0).
+     * @param size Số lượng bản ghi trên mỗi trang (mặc định là 20).
+     * @param authentication Thông tin xác thực của người dùng.
+     * @return ResponseEntity chứa một trang (Page) lịch sử giao dịch.
+     */
     @GetMapping("/{accountNumber}/transactions")
     public ResponseEntity<ApiResponse<Page<TransactionHistoryResponse>>> getTransactionHistory(
             @PathVariable String accountNumber,

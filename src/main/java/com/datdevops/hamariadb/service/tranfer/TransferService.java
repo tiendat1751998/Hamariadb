@@ -28,6 +28,9 @@ import com.datdevops.hamariadb.service.notification.TelegramService;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Service chính để xử lý các giao dịch chuyển tiền đơn lẻ.
+ */
 @Slf4j
 @Service
 @Transactional
@@ -40,12 +43,17 @@ public class TransferService {
     private final TelegramService telegramService;
     private final EntityMapper entityMapper;
 
+    // Hạn mức chuyển tiền tối đa cho một giao dịch
     @Value("${app.transfer.max-single-transfer}")
     private BigDecimal maxSingleTransfer;
 
+    // Hạn mức chuyển tiền tối đa trong một ngày
     @Value("${app.transfer.daily-limit}")
     private BigDecimal dailyLimit;
 
+    /**
+     * Constructor để inject các dependency.
+     */
     public TransferService(TransferRepository transferRepository, AccountRepository accountRepository,
                            TransactionRepository transactionRepository, UserRepository userRepository,
                            TelegramService telegramService, EntityMapper entityMapper) {
@@ -57,30 +65,36 @@ public class TransferService {
         this.entityMapper = entityMapper;
     }
 
+    /**
+     * Tạo và thực hiện một giao dịch chuyển tiền mới.
+     * @param request Dữ liệu yêu cầu chuyển tiền.
+     * @param username Tên người dùng thực hiện.
+     * @return Phản hồi chứa thông tin giao dịch sau khi thực hiện.
+     */
     public TransferResponse createTransfer(TransferRequest request, String username) {
-        // Validate accounts and balance
+        // Xác thực tài khoản và số dư
         Account fromAccount = accountRepository.findByAccountNumber(request.getFromAccount())
                 .orElseThrow(() -> new RuntimeException("Source account not found"));
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Check if user owns the account
+        // Kiểm tra người dùng có sở hữu tài khoản nguồn không
         if (!fromAccount.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("User does not own the source account");
         }
 
-        // Validate transfer amount
+        // Xác thực số tiền chuyển
         validateTransferAmount(request.getAmount(), fromAccount);
 
-        // Create transfer record
+        // Tạo bản ghi giao dịch chuyển tiền ban đầu
         Transfer transfer = createTransferRecord(request, fromAccount, user);
 
         try {
-            // Process the transfer
+            // Xử lý giao dịch
             processTransfer(transfer, fromAccount);
 
-            // Send success notification
+            // Gửi thông báo thành công
             telegramService.sendBalanceUpdate(
                     fromAccount.getAccountNumber(),
                     request.getToAccount(),
@@ -91,15 +105,15 @@ public class TransferService {
                     request.getDescription()
             );
 
-            return EntityMapper.toTransferResponse(transfer);
+            return entityMapper.toTransferResponse(transfer);
 
         } catch (Exception e) {
-            // Mark transfer as failed
+            // Đánh dấu giao dịch là thất bại
             transfer.setStatus(TransferStatus.FAILED);
             transfer.setErrorMessage(e.getMessage());
             transferRepository.save(transfer);
 
-            // Send error notification
+            // Gửi thông báo lỗi
             telegramService.sendTransactionError(
                     fromAccount.getAccountNumber(),
                     request.getAmount(),
@@ -112,6 +126,11 @@ public class TransferService {
         }
     }
 
+    /**
+     * Xác thực số tiền chuyển khoản (hạn mức, số dư).
+     * @param amount Số tiền cần chuyển.
+     * @param fromAccount Tài khoản nguồn.
+     */
     private void validateTransferAmount(BigDecimal amount, Account fromAccount) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("Transfer amount must be positive");
@@ -125,13 +144,23 @@ public class TransferService {
             throw new RuntimeException("Insufficient balance");
         }
 
-        // Check daily limit (simplified - would need more complex logic for actual implementation)
+        // Kiểm tra hạn mức ngày (logic đơn giản)
         BigDecimal dailyTotal = transferRepository.sumTodayTransfersByAccount(fromAccount.getId());
+        if (dailyTotal == null) {
+            dailyTotal = BigDecimal.ZERO;
+        }
         if (dailyTotal.add(amount).compareTo(dailyLimit) > 0) {
             throw new RuntimeException("Transfer would exceed daily limit");
         }
     }
 
+    /**
+     * Tạo một bản ghi Transfer mới trong CSDL với trạng thái PENDING.
+     * @param request Dữ liệu yêu cầu.
+     * @param fromAccount Tài khoản nguồn.
+     * @param user Người dùng thực hiện.
+     * @return Đối tượng Transfer đã được lưu.
+     */
     private Transfer createTransferRecord(TransferRequest request, Account fromAccount, User user) {
         Transfer transfer = new Transfer();
         transfer.setTransferReference(generateTransferReference());
@@ -151,13 +180,18 @@ public class TransferService {
         return transferRepository.save(transfer);
     }
 
+    /**
+     * Xử lý logic cốt lõi của việc chuyển tiền: trừ tiền và tạo transaction log.
+     * @param transfer Đối tượng giao dịch chuyển tiền.
+     * @param fromAccount Tài khoản nguồn.
+     */
     private void processTransfer(Transfer transfer, Account fromAccount) {
-        // Deduct from source account
+        // Trừ tiền từ tài khoản nguồn
         fromAccount.setBalance(fromAccount.getBalance().subtract(transfer.getTotalAmount()));
         fromAccount.setAvailableBalance(fromAccount.getAvailableBalance().subtract(transfer.getTotalAmount()));
         accountRepository.save(fromAccount);
 
-        // Create transaction record
+        // Tạo bản ghi lịch sử giao dịch (transaction log)
         Transaction transaction = createTransaction(transfer, fromAccount);
         transfer.setTransaction(transaction);
         transfer.setStatus(TransferStatus.COMPLETED);
@@ -165,12 +199,18 @@ public class TransferService {
         transferRepository.save(transfer);
     }
 
+    /**
+     * Tạo một bản ghi Transaction (lịch sử giao dịch) cho việc chuyển tiền.
+     * @param transfer Giao dịch chuyển tiền liên quan.
+     * @param fromAccount Tài khoản nguồn.
+     * @return Đối tượng Transaction đã được lưu.
+     */
     private Transaction createTransaction(Transfer transfer, Account fromAccount) {
         Transaction transaction = new Transaction();
         transaction.setTransactionReference(generateTransactionReference());
         transaction.setAccount(fromAccount);
         transaction.setTransactionType(TransactionType.TRANSFER_OUT);
-        transaction.setAmount(transfer.getTotalAmount().negate());
+        transaction.setAmount(transfer.getTotalAmount().negate()); // Số tiền là số âm vì là giao dịch trừ tiền
         transaction.setBalanceBefore(fromAccount.getBalance().add(transfer.getTotalAmount()));
         transaction.setBalanceAfter(fromAccount.getBalance());
         transaction.setCurrency("VND");
@@ -180,24 +220,42 @@ public class TransferService {
         return transactionRepository.save(transaction);
     }
 
+    /**
+     * Tạo mã tham chiếu duy nhất cho giao dịch chuyển tiền.
+     * @return Mã tham chiếu.
+     */
     private String generateTransferReference() {
         return "TF" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
+    /**
+     * Tạo mã tham chiếu duy nhất cho lịch sử giao dịch.
+     * @return Mã tham chiếu.
+     */
     private String generateTransactionReference() {
         return "TX" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
+    /**
+     * Tính phí giao dịch (logic đơn giản).
+     * @param request Dữ liệu yêu cầu.
+     * @return Phí giao dịch.
+     */
     private BigDecimal calculateFee(TransferRequest request) {
-        // Simplified fee calculation
-        return BigDecimal.valueOf(3300); // Standard fee
+        // TODO: Triển khai logic tính phí phức tạp hơn nếu cần.
+        return BigDecimal.valueOf(3300); // Phí cố định
     }
 
+    /**
+     * Xác định loại chuyển tiền (nội bộ hay liên ngân hàng).
+     * @param request Dữ liệu yêu cầu.
+     * @return Loại chuyển tiền.
+     */
     private TransferType determineTransferType(TransferRequest request) {
         if (request.getToBankCode() == null || request.getToBankCode().isEmpty()) {
-            return TransferType.INTERNAL;
+            return TransferType.INTERNAL; // Chuyển tiền nội bộ
         } else {
-            return TransferType.NAPAS;
+            return TransferType.NAPAS; // Chuyển tiền liên ngân hàng (giả định)
         }
     }
 }

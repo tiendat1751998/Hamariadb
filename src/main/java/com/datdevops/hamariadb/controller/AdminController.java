@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Controller xử lý các yêu cầu quản trị hệ thống.
+ * Yêu cầu quyền ADMIN để truy cập các endpoint này (được cấu hình trong SecurityConfig).
+ */
 @Slf4j
 @RestController
 @RequestMapping("/v1/admin")
@@ -28,7 +32,11 @@ public class AdminController {
         this.roleService = roleService;
     }
 
-    // User Management Endpoints
+    // --- User Management Endpoints ---
+
+    /**
+     * Endpoint để admin tạo một người dùng mới.
+     */
     @PostMapping("/users")
     public ResponseEntity<ApiResponse<UserResponse>> createUser(
             @RequestBody UserCreateRequest request,
@@ -41,6 +49,9 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(response, "User created successfully"));
     }
 
+    /**
+     * Endpoint để admin lấy danh sách tất cả người dùng.
+     */
     @GetMapping("/users")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getUsers(Authentication authentication) {
         String adminUsername = authentication.getName();
@@ -50,6 +61,9 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(responses, "Users retrieved successfully"));
     }
 
+    /**
+     * Endpoint để admin lấy thông tin chi tiết một người dùng theo ID.
+     */
     @GetMapping("/users/{userId}")
     public ResponseEntity<ApiResponse<UserResponse>> getUser(
             @PathVariable String userId,
@@ -62,6 +76,9 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(response, "User retrieved successfully"));
     }
 
+    /**
+     * Endpoint để admin cập nhật vai trò cho một người dùng.
+     */
     @PutMapping("/users/{userId}/roles")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserRoles(
             @PathVariable String userId,
@@ -75,6 +92,9 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(response, "User roles updated successfully"));
     }
 
+    /**
+     * Endpoint để admin cập nhật trạng thái cho một người dùng (ACTIVE, LOCKED, INACTIVE).
+     */
     @PutMapping("/users/{userId}/status")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserStatus(
             @PathVariable String userId,
@@ -88,6 +108,9 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(response, "User status updated successfully"));
     }
 
+    /**
+     * Endpoint để admin xóa một người dùng.
+     */
     @DeleteMapping("/users/{userId}")
     public ResponseEntity<ApiResponse<Void>> deleteUser(
             @PathVariable String userId,
@@ -100,7 +123,11 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(null, "User deleted successfully"));
     }
 
-    // Role Management Endpoints
+    // --- Role Management Endpoints ---
+
+    /**
+     * Endpoint để admin lấy danh sách tất cả các vai trò.
+     */
     @GetMapping("/roles")
     public ResponseEntity<ApiResponse<List<Role>>> getRoles(Authentication authentication) {
         log.info("Get roles by admin: {}", authentication.getName());
@@ -109,6 +136,9 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(roles, "Roles retrieved successfully"));
     }
 
+    /**
+     * Endpoint để admin lấy thông tin một vai trò theo mã vai trò.
+     */
     @GetMapping("/roles/{roleCode}")
     public ResponseEntity<ApiResponse<Role>> getRole(
             @PathVariable String roleCode,
@@ -120,6 +150,9 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(role, "Role retrieved successfully"));
     }
 
+    /**
+     * Endpoint để admin tạo một vai trò mới.
+     */
     @PostMapping("/roles")
     public ResponseEntity<ApiResponse<Role>> createRole(
             @RequestParam String roleCode,
@@ -133,6 +166,9 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(role, "Role created successfully"));
     }
 
+    /**
+     * Endpoint để admin cập nhật một vai trò.
+     */
     @PutMapping("/roles/{roleCode}")
     public ResponseEntity<ApiResponse<Role>> updateRole(
             @PathVariable String roleCode,
@@ -146,6 +182,9 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(role, "Role updated successfully"));
     }
 
+    /**
+     * Endpoint để admin xóa một vai trò.
+     */
     @DeleteMapping("/roles/{roleCode}")
     public ResponseEntity<ApiResponse<Void>> deleteRole(
             @PathVariable String roleCode,

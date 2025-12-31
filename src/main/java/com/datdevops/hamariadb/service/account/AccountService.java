@@ -20,6 +20,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service chịu trách nhiệm cho các hoạt động liên quan đến tài khoản người dùng,
+ * như truy vấn số dư và lịch sử giao dịch.
+ */
 @Slf4j
 @Service
 public class AccountService {
@@ -38,43 +42,55 @@ public class AccountService {
         this.entityMapper = entityMapper;
     }
 
+    /**
+     * Lấy thông tin số dư của một tài khoản cụ thể.
+     * @param accountNumber Số tài khoản cần truy vấn.
+     * @param username Tên người dùng thực hiện yêu cầu (để xác thực quyền).
+     * @return Phản hồi chứa thông tin số dư.
+     */
     public AccountBalanceResponse getAccountBalance(String accountNumber, String username) {
+        // Tìm người dùng để xác thực.
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // Tìm tài khoản và thông tin người dùng sở hữu.
         Account account = accountRepository.findByAccountNumberWithUser(accountNumber)
                 .orElseThrow(() -> new RuntimeException("Account not found"));
 
-        // Check if user owns the account
+        // Kiểm tra xem người dùng có phải là chủ sở hữu của tài khoản không.
         if (!account.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("User does not own this account");
         }
 
-        return AccountBalanceResponse.builder()
-                .accountNumber(account.getAccountNumber())
-                .balance(account.getBalance())
-                .availableBalance(account.getAvailableBalance())
-                .currency(account.getCurrency())
-                .lastUpdated(account.getUpdatedAt())
-                .build();
+        // Sử dụng EntityMapper để chuyển đổi sang DTO.
+        return entityMapper.toAccountBalanceResponse(account);
     }
 
+    /**
+     * Lấy danh sách tất cả các tài khoản đang hoạt động của một người dùng.
+     * @param username Tên người dùng.
+     * @return Danh sách các tài khoản và thông tin số dư.
+     */
     public List<AccountBalanceResponse> getUserAccounts(String username) {
         List<Account> accounts = accountRepository.findActiveAccountsByUsername(username);
 
+        // Chuyển đổi danh sách các entity Account thành danh sách DTO AccountBalanceResponse.
         return accounts.stream()
-                .map(account -> AccountBalanceResponse.builder()
-                        .accountNumber(account.getAccountNumber())
-                        .balance(account.getBalance())
-                        .availableBalance(account.getAvailableBalance())
-                        .currency(account.getCurrency())
-                        .accountType(account.getAccountType())
-                        .status(account.getStatus())
-                        .lastUpdated(account.getUpdatedAt())
-                        .build())
+                .map(entityMapper::toAccountBalanceResponse)
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Lấy lịch sử giao dịch của một tài khoản với các bộ lọc và phân trang.
+     * @param accountNumber Số tài khoản cần truy vấn.
+     * @param username Tên người dùng để xác thực quyền.
+     * @param fromDate Lọc giao dịch từ ngày (có thể null).
+     * @param toDate Lọc giao dịch đến ngày (có thể null).
+     * @param transactionType Lọc theo loại giao dịch (có thể null).
+     * @param page Trang hiện tại (bắt đầu từ 0).
+     * @param size Số lượng bản ghi trên mỗi trang.
+     * @return Một trang (Page) chứa lịch sử giao dịch.
+     */
     public Page<TransactionHistoryResponse> getTransactionHistory(String accountNumber, String username,
                                                                   LocalDateTime fromDate, LocalDateTime toDate,
                                                                   String transactionType, int page, int size) {
@@ -84,31 +100,18 @@ public class AccountService {
         Account account = accountRepository.findByAccountNumberWithUser(accountNumber)
                 .orElseThrow(() -> new RuntimeException("Account not found"));
 
-        // Check if user owns the account
+        // Xác thực quyền sở hữu tài khoản.
         if (!account.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("User does not own this account");
         }
 
+        // Tạo đối tượng Pageable để phân trang.
         Pageable pageable = PageRequest.of(page, size);
+        // Gọi repository để truy vấn CSDL với các bộ lọc.
         Page<Transaction> transactions = transactionRepository.findByAccountAndFilters(
                 accountNumber, fromDate, toDate, transactionType, pageable);
 
-        return transactions.map(this::convertToTransactionHistoryResponse);
-    }
-
-    private TransactionHistoryResponse convertToTransactionHistoryResponse(Transaction transaction) {
-        return TransactionHistoryResponse.builder()
-                .transactionId(transaction.getId())
-                .transactionReference(transaction.getTransactionReference())
-                .amount(transaction.getAmount())
-                .balanceBefore(transaction.getBalanceBefore())
-                .balanceAfter(transaction.getBalanceAfter())
-                .description(transaction.getDescription())
-                .transactionType(transaction.getTransactionType())
-                .status(transaction.getStatus())
-                .transactionDate(transaction.getTransactionDate())
-                .relatedAccountNumber(transaction.getRelatedAccount() != null ?
-                        transaction.getRelatedAccount().getAccountNumber() : null)
-                .build();
+        // Chuyển đổi Page<Transaction> thành Page<TransactionHistoryResponse>.
+        return transactions.map(entityMapper::toTransactionHistoryResponse);
     }
 }

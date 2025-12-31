@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Controller xử lý các yêu cầu liên quan đến chuyển tiền định kỳ.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/v1/transfers/recurring")
@@ -23,6 +26,9 @@ public class RecurringTransferController {
         this.recurringTransferService = recurringTransferService;
     }
 
+    /**
+     * Endpoint để tạo một lịch chuyển tiền định kỳ mới.
+     */
     @PostMapping
     public ResponseEntity<ApiResponse<RecurringTransferResponse>> createRecurringTransfer(
             @RequestBody RecurringTransferRequest request,
@@ -35,6 +41,9 @@ public class RecurringTransferController {
         return ResponseEntity.ok(ApiResponse.success(response, "Recurring transfer created successfully"));
     }
 
+    /**
+     * Endpoint để lấy danh sách các lịch chuyển tiền định kỳ của người dùng.
+     */
     @GetMapping
     public ResponseEntity<ApiResponse<List<RecurringTransferResponse>>> getRecurringTransfers(
             Authentication authentication) {
@@ -46,6 +55,9 @@ public class RecurringTransferController {
         return ResponseEntity.ok(ApiResponse.success(responses, "Recurring transfers retrieved successfully"));
     }
 
+    /**
+     * Endpoint để cập nhật một lịch chuyển tiền định kỳ.
+     */
     @PutMapping("/{recurringId}")
     public ResponseEntity<ApiResponse<RecurringTransferResponse>> updateRecurringTransfer(
             @PathVariable String recurringId,
@@ -59,6 +71,9 @@ public class RecurringTransferController {
         return ResponseEntity.ok(ApiResponse.success(response, "Recurring transfer updated successfully"));
     }
 
+    /**
+     * Endpoint để hủy một lịch chuyển tiền định kỳ.
+     */
     @DeleteMapping("/{recurringId}")
     public ResponseEntity<ApiResponse<Void>> cancelRecurringTransfer(
             @PathVariable String recurringId,
@@ -71,6 +86,9 @@ public class RecurringTransferController {
         return ResponseEntity.ok(ApiResponse.success(null, "Recurring transfer canceled successfully"));
     }
 
+    /**
+     * Endpoint để tạm dừng một lịch chuyển tiền định kỳ đang hoạt động.
+     */
     @PostMapping("/{recurringId}/pause")
     public ResponseEntity<ApiResponse<Void>> pauseRecurringTransfer(
             @PathVariable String recurringId,
@@ -83,6 +101,9 @@ public class RecurringTransferController {
         return ResponseEntity.ok(ApiResponse.success(null, "Recurring transfer paused successfully"));
     }
 
+    /**
+     * Endpoint để tiếp tục một lịch chuyển tiền định kỳ đã bị tạm dừng.
+     */
     @PostMapping("/{recurringId}/resume")
     public ResponseEntity<ApiResponse<Void>> resumeRecurringTransfer(
             @PathVariable String recurringId,

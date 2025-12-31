@@ -23,6 +23,9 @@ import com.datdevops.hamariadb.repository.mapper.EntityMapper;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Service dành cho quản trị viên để quản lý người dùng.
+ */
 @Slf4j
 @Service
 @Transactional
@@ -33,6 +36,9 @@ public class UserManagementService {
     private final PasswordEncoder passwordEncoder;
     private final EntityMapper entityMapper;
 
+    /**
+     * Constructor để inject các dependency.
+     */
     public UserManagementService(UserRepository userRepository,
                                  RoleRepository roleRepository,
                                  PasswordEncoder passwordEncoder, EntityMapper entityMapper) {
@@ -42,22 +48,28 @@ public class UserManagementService {
         this.entityMapper = entityMapper;
     }
 
+    /**
+     * Tạo một người dùng mới.
+     * @param request Dữ liệu để tạo người dùng.
+     * @param adminUsername Tên quản trị viên thực hiện.
+     * @return Phản hồi chứa thông tin người dùng đã tạo.
+     */
     public UserResponse createUser(UserCreateRequest request, String adminUsername) {
-        // Check if username already exists
+        // Kiểm tra xem username đã tồn tại chưa
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Username already exists: " + request.getUsername());
         }
 
-        // Check if email already exists
+        // Kiểm tra xem email đã tồn tại chưa
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already exists: " + request.getEmail());
         }
-    Set<Account> accounts = new HashSet<>();
-    Account account = new Account();
-        // Create new user
+        Set<Account> accounts = new HashSet<>();
+        Account account = new Account();
+        // Tạo người dùng mới
         User user = new User();
         user.setUsername(request.getUsername());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword())); // Mã hóa mật khẩu
         user.setEmail(request.getEmail());
         user.setPhoneNumber(request.getPhoneNumber());
         user.setFullName(request.getFullName());
@@ -69,49 +81,74 @@ public class UserManagementService {
 
         user = userRepository.save(user);
 
-        // Assign roles if provided
+        // Gán vai trò nếu có
         if (request.getRoles() != null && !request.getRoles().isEmpty()) {
             assignRolesToUser(user, request.getRoles(), adminUsername);
         }
 
         log.info("User created: {} by admin: {}", request.getUsername(), adminUsername);
 
-        return EntityMapper.toUserResponse(user);
+        return entityMapper.toUserResponse(user);
     }
 
+    /**
+     * Lấy danh sách tất cả người dùng.
+     * @param adminUsername Tên quản trị viên thực hiện (để ghi log).
+     * @return Danh sách người dùng.
+     */
     public List<UserResponse> getUsers(String adminUsername) {
         List<User> users = userRepository.findAll();
 
         return users.stream()
-                .map(this::convertToUserResponse)
+                .map(entityMapper::toUserResponse)
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Lấy thông tin chi tiết của một người dùng bằng ID.
+     * @param userId ID của người dùng.
+     * @param adminUsername Tên quản trị viên thực hiện.
+     * @return Thông tin chi tiết người dùng.
+     */
     public UserResponse getUserById(String userId, String adminUsername) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
 
-        return EntityMapper.toUserResponse(user);
+        return entityMapper.toUserResponse(user);
     }
 
+    /**
+     * Cập nhật vai trò cho một người dùng.
+     * @param userId ID của người dùng.
+     * @param roles Danh sách các mã vai trò mới.
+     * @param adminUsername Tên quản trị viên thực hiện.
+     * @return Thông tin người dùng sau khi cập nhật.
+     */
     public UserResponse updateUserRoles(String userId, List<String> roles, String adminUsername) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
 
-        // Clear existing roles
+        // Xóa các vai trò hiện có
         user.getUserRoles().clear();
         userRepository.save(user);
 
-        // Assign new roles
+        // Gán các vai trò mới
         if (roles != null && !roles.isEmpty()) {
             assignRolesToUser(user, roles, adminUsername);
         }
 
         log.info("User roles updated: {} by admin: {}", user.getUsername(), adminUsername);
 
-        return EntityMapper.toUserResponse(user);
+        return entityMapper.toUserResponse(user);
     }
 
+    /**
+     * Cập nhật trạng thái của người dùng (ví dụ: ACTIVE, LOCKED).
+     * @param userId ID của người dùng.
+     * @param status Trạng thái mới.
+     * @param adminUsername Tên quản trị viên thực hiện.
+     * @return Thông tin người dùng sau khi cập nhật.
+     */
     public UserResponse updateUserStatus(String userId, UserStatus status, String adminUsername) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
@@ -121,22 +158,34 @@ public class UserManagementService {
 
         log.info("User status updated: {} to {} by admin: {}", user.getUsername(), status, adminUsername);
 
-        return EntityMapper.toUserResponse(user);
+        return entityMapper.toUserResponse(user);
     }
 
+    /**
+     * Xóa một người dùng.
+     * @param userId ID của người dùng.
+     * @param adminUsername Tên quản trị viên thực hiện.
+     */
     public void deleteUser(String userId, String adminUsername) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
 
-        // In a real system, you might want to soft delete
+        // Trong hệ thống thực tế, nên cân nhắc xóa mềm (soft delete) thay vì xóa cứng.
         userRepository.delete(user);
 
         log.info("User deleted: {} by admin: {}", user.getUsername(), adminUsername);
     }
 
+    /**
+     * Gán một danh sách vai trò cho người dùng.
+     * @param user Đối tượng người dùng.
+     * @param roleCodes Danh sách mã vai trò.
+     * @param adminUsername Tên quản trị viên gán vai trò.
+     */
     private void assignRolesToUser(User user, List<String> roleCodes, String adminUsername) {
         List<Role> roles = roleRepository.findByRoleCodeIn(roleCodes);
 
+        // Đảm bảo tất cả các vai trò được yêu cầu đều tồn tại
         if (roles.size() != roleCodes.size()) {
             throw new RuntimeException("Some roles not found");
         }
@@ -155,6 +204,11 @@ public class UserManagementService {
         userRepository.save(user);
     }
 
+    /**
+     * Chuyển đổi đối tượng User (Entity) sang UserResponse (DTO).
+     * @param user Đối tượng Entity.
+     * @return Đối tượng DTO.
+     */
     private UserResponse convertToUserResponse(User user) {
         List<String> roles = user.getUserRoles().stream()
                 .map(userRole -> userRole.getRole().getRoleCode())
